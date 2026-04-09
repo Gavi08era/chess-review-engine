@@ -49,13 +49,16 @@ def analyze_game(game, engine):
     for move in game.mainline_moves():
         engine_move(board, engine)
         san = board.san(move)
-        print("Pre-move_eval: ", evalBeforeMove(board, engine))
+        pre_eval = evalBeforeMove(board, engine)
+        print("Pre_move eval: ", pre_eval)
         print("Player move: ", san)
         
         board.push(move)
+        post_eval = evalAfterMove(board, engine)
         print(board)
-        print("Post-move_eval", evalAfterMove(board, engine))
-        eval_drop(board, engine)
+        print("post_move_eval", post_eval)
+        print("Evaluation drop", eval_drop(pre_eval, post_eval))
+        print("Move Classification:", move_classification(pre_eval, post_eval))
         print("")
 
 
@@ -74,11 +77,11 @@ def evalAfterMove(board, engine):
 
 def universal_score(info):
     # Fixed perspective: positive means White is better, negative means Black is better.
-    return info["score"].pov(chess.WHITE)
+    return info["score"].pov(chess.WHITE).score(mate_score=100000)
 def regex_problem(info):
     match = re.findall(r'Cp\((-?\d+)\)', universal_score(info))
     value = [int(x) for x in match]
-    return value
+    return int(value)
 
 def engine_move(board, engine):
     result = engine.play(board, chess.engine.Limit(depth=15))
@@ -89,18 +92,26 @@ def engine_move(board, engine):
     board.pop()
 
 def engine_eval(engine, board):
-    info = engine.analyse(board, chess.engine.Limit(time=0.1))
+    info = engine.analyse(board, chess.engine.Limit(time=0.2))
     print("Engine_Evaluation:", universal_score(info))
 
 
-#eval drop
+#eval drop done
 #classify move
 #eval bar
-def eval_drop(board, engine):
-    pass
-    #post_eval-pre_eval=+-drop
-    #drop=evalBeforeMove(board, engine)-evalAfterMove(board, engine)
-    #print(drop)
+def eval_drop(pre_eval, post_eval):
+    drop = pre_eval - post_eval
+    return drop
+
+def move_classification(pre_eval, post_eval):
+    if -30<=eval_drop(pre_eval, post_eval) <=30:
+        return "Good"
+    elif -30<eval_drop(pre_eval, post_eval)<=70 or -70<=eval_drop(pre_eval, post_eval)<-30:
+        return "Inaccuracy"
+    elif 70<eval_drop(pre_eval, post_eval)<=150 in range(70, 150) or -150<=eval_drop(pre_eval, post_eval)< -70:
+        return "mistake"
+    else:
+        return "Blunder"
 
 
 
