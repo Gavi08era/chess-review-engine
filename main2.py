@@ -4,6 +4,9 @@ import chess.pgn
 from pathlib import Path
 import re
 import json
+
+
+
 class game_analyzer:
     def __init__(self, ):
         pass
@@ -15,23 +18,24 @@ class engine_wrapper:
         pass
 
 def main():
-    game = load_game()
+    game = load_game(filepath)
     engine = initialize_engine()
     try:
         game_analysis = analyze_game(game, engine)
         #save_analysis(game_analysis)
     finally:
         engine.quit()
-
-
-def load_game():
-    with open("Carlsen.pgn", "r", encoding="utf-8") as pgn:
+filepath=input("Enter PGN file path: ")
+def load_game(filepath: str):
+    with open(filepath, "r", encoding="utf-8") as pgn:
         game = chess.pgn.read_game(pgn)
 
     if game is None:
         raise ValueError("No valid game found in Carlsen.pgn")
 
     return game
+
+
 
 
 def initialize_engine():
@@ -49,7 +53,8 @@ def analyze_game(game, engine):
     board = game.board()
     move_count = 0
     game_analysis = []
-    eval_timeline=[]    #eval_bar
+    eval_timeline=[] 
+    eval_bar_white=[]   #eval_bar
 
     for move in game.mainline_moves():
         move_count += 1
@@ -87,10 +92,13 @@ def analyze_game(game, engine):
 
 
         eval_timeline.append(drop/100)
+        eval_bar_white.append(to_percentage(drop, min_val=-5, max_val=5))
+
 
 
         print("")
     print(eval_timeline)
+    print(eval_bar_white)
 
     return game_analysis
 
@@ -143,15 +151,19 @@ def eval_drop(pre_eval, post_eval):
     return drop
 
 def move_classification(pre_eval, post_eval):
-    drop = abs(eval_drop(pre_eval, post_eval))
-    if drop <= 30:
+    drop = abs(pre_eval - post_eval)
+
+    if drop == 0:
+        return "Best"
+    elif drop<=20 or drop>=-20:
+        return "Excellent"
+    elif drop <= 50 or drop>=-50:
         return "Good"
-    elif drop <= 70:
+    elif drop <= 100 or drop>=-100:
         return "Inaccuracy"
-    elif drop <= 150:
+    elif drop <=150 or drop>=-150:
         return "Mistake"
-    else:
-        return "Blunder"
+    return "Blunder"
     
 
 def analysis_data(move_number, played_move, best_move, pre_eval, post_eval, drop, classification):
@@ -169,16 +181,54 @@ def analysis_data(move_number, played_move, best_move, pre_eval, post_eval, drop
 
 
 
-def to_percentage(x, min_val=-5, max_val=5):
-    return ((x - min_val) / (max_val - min_val)) * 100
+def to_percentage(drop, min_val=-5, max_val=5):
+    return (((drop/100) - min_val) / (max_val - min_val)) * 100
     
-
 #def save_analysis(game_analysis):
     #output_path = Path(__file__).resolve().parent / "notes" / "analysis_data.json"
     #output_path.parent.mkdir(parents=True, exist_ok=True)
     #with open(output_path, "w", encoding="utf-8") as f:
     #json.dump(game_analysis, f, indent=2, ensure_ascii=False)
     #print(f"Saved analysis to: {output_path}")
+
+
+
+def color(move_number):
+    if move_number % 2 == 1:
+        return "White"
+    return "Black"
+
+def game_summary(game_analysis):
+    labels = ["Best", "Excellent", "Good", "Inaccuracy", "Mistake", "Blunder"]
+
+    summary = {
+        "White": {label: 0 for label in labels},
+        "Black": {label: 0 for label in labels},
+        "Total": {label: 0 for label in labels},
+    }
+
+    for move_data in game_analysis:
+        move_number = move_data.get("move_number")
+        classification = move_data.get("classification")
+
+        if not isinstance(move_number, int) or classification not in summary["Total"]:
+            continue
+
+        side = color(move_number)
+        summary[side][classification] += 1
+        summary["Total"][classification] += 1
+
+    return summary
+
+
+
+
+def opening_detection():
+    pass
+def blunder_counter():
+    pass
+
+
 
 if __name__ == "__main__":
     main()
