@@ -56,12 +56,18 @@ def analyze_game(game, engine):
     eval_timeline=[] 
     eval_bar_white=[]   #eval_bar
 
+
+    white_player = game.headers["White"]
+    black_player = game.headers["Black"]
+    print(f"White: {white_player}, Black: {black_player}")
+
     for move in game.mainline_moves():
         move_count += 1
 
         pre_eval = evalBeforeMove(board, engine)
         best_move = engine_move(board, engine)
         played_move = player_move(board, move)
+        
 
         print(f"Move {move_count}")
         print("Pre_move eval:", pre_eval)
@@ -98,8 +104,15 @@ def analyze_game(game, engine):
 
         print("")
     print(eval_timeline)
+    print("")
     print(eval_bar_white)
+    print("")
+    accuracy(eval_timeline)
+    summary=game_summary(game_analysis)
+    print(summary)
+    game_result(game)
 
+    #write down no. of moves
     return game_analysis
 
 def player_move(board, move):
@@ -147,7 +160,7 @@ def engine_eval(engine, board):
 #classify move
 #eval bar
 def eval_drop(pre_eval, post_eval):
-    drop = pre_eval - post_eval
+    drop = abs(pre_eval - post_eval)
     return drop
 
 def move_classification(pre_eval, post_eval):
@@ -220,14 +233,58 @@ def game_summary(game_analysis):
 
     return summary
 
+def game_result(game):
+    result=game.headers["Result"]
+    print(f"Result: {result}")
+    if result.strip()=="0-1":
+        print("Black Won")
+    elif result.strip()=="1-0":
+        print("White Won")
+    else:
+        print("Draw")
+    
+#todo
+
+#Brilliant moves
+#Great Moves
+#Opening Detection
+#book moves
+#missed moves(missed tactics)
+#prining mate in n
+#performance elo
+
+#Accuracy(overalll for black and white, opening, middle game and end game)
+#avg(drop)*100
+def accuracy(eval_timeline):
+    w=[]
+    b=[]
+    for i, value in enumerate(eval_timeline):
+        if i%2==0:
+            w.append(value)
+        else:
+            b.append(value)
+    print("White: ", average(w))
+    print("Black: ", average(b))
+
+
+
+
+
+def average(arr):
+    avg=sum(arr)/len(arr)
+
+    return 100-avg*10
+
+    
+
+
+    
+
 
 
 
 def opening_detection():
     pass
-def blunder_counter():
-    pass
-
 
 
 if __name__ == "__main__":
